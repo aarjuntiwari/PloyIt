@@ -1,0 +1,575 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>PloyIt — Deploy Anything, Instantly</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;700&display=swap');
+
+    *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+    :root {
+      --bg: #0a0a0f;
+      --bg2: #12121a;
+      --bg3: #1a1a26;
+      --accent: #6c5ce7;
+      --accent2: #a29bfe;
+      --green: #00e676;
+      --green2: #69f0ae;
+      --red: #ff5252;
+      --text: #e8e8f0;
+      --muted: #7a7a8e;
+      --border: #2a2a3a;
+      --glow: rgba(108, 92, 231, 0.25);
+    }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      font-family: 'Inter', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+
+    /* ── Animated background ── */
+    .bg-grid {
+      position: fixed; inset: 0; z-index: 0; pointer-events: none;
+      background-image:
+        linear-gradient(rgba(108,92,231,.04) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(108,92,231,.04) 1px, transparent 1px);
+      background-size: 60px 60px;
+    }
+    .bg-glow {
+      position: fixed; top: -200px; left: 50%; transform: translateX(-50%);
+      width: 900px; height: 600px; border-radius: 50%;
+      background: radial-gradient(circle, rgba(108,92,231,.12) 0%, transparent 70%);
+      z-index: 0; pointer-events: none;
+      animation: pulse 6s ease-in-out infinite;
+    }
+    @keyframes pulse {
+      0%, 100% { opacity: .6; transform: translateX(-50%) scale(1); }
+      50% { opacity: 1; transform: translateX(-50%) scale(1.1); }
+    }
+
+    /* ── Nav ── */
+    nav {
+      position: fixed; top: 0; width: 100%; z-index: 100;
+      backdrop-filter: blur(20px); background: rgba(10,10,15,.75);
+      border-bottom: 1px solid var(--border);
+    }
+    .nav-inner {
+      max-width: 1200px; margin: 0 auto;
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 16px 32px;
+    }
+    .logo {
+      font-size: 1.5rem; font-weight: 900; letter-spacing: -1px;
+      background: linear-gradient(135deg, var(--accent), var(--accent2));
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+    }
+    .logo span { -webkit-text-fill-color: var(--text); }
+    .nav-links { display: flex; gap: 28px; list-style: none; }
+    .nav-links a {
+      color: var(--muted); text-decoration: none; font-size: .9rem; font-weight: 500;
+      transition: color .2s;
+    }
+    .nav-links a:hover { color: var(--text); }
+    .nav-cta {
+      background: var(--accent); color: #fff; border: none; padding: 10px 22px;
+      border-radius: 10px; font-weight: 600; font-size: .85rem; cursor: pointer;
+      transition: all .2s;
+    }
+    .nav-cta:hover { background: #5b4bd6; transform: translateY(-1px); box-shadow: 0 4px 20px var(--glow); }
+
+    /* ── Sections ── */
+    .container { position: relative; z-index: 1; }
+
+    /* ── Hero ── */
+    .hero {
+      max-width: 1200px; margin: 0 auto; padding: 160px 32px 80px; text-align: center;
+    }
+    .badge {
+      display: inline-flex; align-items: center; gap: 8px;
+      background: var(--bg3); border: 1px solid var(--border);
+      padding: 6px 16px; border-radius: 50px; font-size: .8rem; color: var(--accent2);
+      margin-bottom: 28px; font-weight: 500;
+    }
+    .badge .dot { width: 6px; height: 6px; background: var(--green); border-radius: 50%; animation: blink 1.5s infinite; }
+    @keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: .3; } }
+
+    .hero h1 {
+      font-size: clamp(2.8rem, 7vw, 5rem); font-weight: 900; line-height: 1.05;
+      letter-spacing: -2px; margin-bottom: 20px;
+    }
+    .hero h1 .grad {
+      background: linear-gradient(135deg, var(--accent), var(--green2));
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+    }
+    .hero p { color: var(--muted); font-size: 1.2rem; max-width: 560px; margin: 0 auto 44px; line-height: 1.6; }
+
+    /* ── Domain Picker ── */
+    .domain-box {
+      max-width: 620px; margin: 0 auto 20px;
+      background: var(--bg2); border: 1px solid var(--border); border-radius: 16px;
+      padding: 6px; display: flex; align-items: center;
+      transition: border-color .3s, box-shadow .3s;
+    }
+    .domain-box:focus-within { border-color: var(--accent); box-shadow: 0 0 30px var(--glow); }
+    .domain-box input {
+      flex: 1; background: transparent; border: none; outline: none;
+      color: var(--text); font-size: 1.05rem; padding: 14px 18px;
+      font-family: 'JetBrains Mono', monospace;
+    }
+    .domain-box input::placeholder { color: var(--muted); }
+    .domain-suffix {
+      color: var(--muted); font-family: 'JetBrains Mono', monospace;
+      font-size: 1.05rem; padding-right: 8px; user-select: none;
+    }
+    .domain-box button {
+      background: linear-gradient(135deg, var(--accent), #8b7cf7);
+      color: #fff; border: none; padding: 14px 28px; border-radius: 12px;
+      font-weight: 700; font-size: .95rem; cursor: pointer; transition: all .2s;
+      white-space: nowrap;
+    }
+    .domain-box button:hover { transform: scale(1.03); box-shadow: 0 4px 25px var(--glow); }
+    .domain-hint { color: var(--green); font-size: .82rem; font-weight: 500; min-height: 20px; }
+    .domain-hint.error { color: var(--red); }
+
+    /* ── Deploy Panel ── */
+    .deploy-panel {
+      max-width: 760px; margin: 48px auto 0;
+      background: var(--bg2); border: 1px solid var(--border); border-radius: 20px;
+      overflow: hidden; display: none;
+      animation: slideUp .5s ease;
+    }
+    @keyframes slideUp { from { opacity: 0; transform: translateY(30px); } to { opacity: 1; transform: translateY(0); } }
+
+    .deploy-panel.show { display: block; }
+
+    .dp-header {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 20px 28px; border-bottom: 1px solid var(--border);
+    }
+    .dp-site-name {
+      font-family: 'JetBrains Mono', monospace; font-weight: 700; font-size: 1.1rem;
+      color: var(--accent2);
+    }
+    .dp-status {
+      display: flex; align-items: center; gap: 6px;
+      font-size: .8rem; font-weight: 600; color: var(--muted);
+    }
+    .dp-status .dot-status { width: 8px; height: 8px; border-radius: 50%; background: var(--muted); }
+
+    .dp-body { padding: 28px; }
+
+    /* Upload area */
+    .upload-zone {
+      border: 2px dashed var(--border); border-radius: 14px; padding: 44px 20px;
+      text-align: center; cursor: pointer; transition: all .3s;
+      margin-bottom: 20px;
+    }
+    .upload-zone:hover, .upload-zone.dragover {
+      border-color: var(--accent); background: rgba(108,92,231,.05);
+    }
+    .upload-zone .icon { font-size: 2.4rem; margin-bottom: 10px; }
+    .upload-zone p { color: var(--muted); font-size: .9rem; }
+    .upload-zone p strong { color: var(--text); }
+    .upload-zone input { display: none; }
+
+    .file-list { display: flex; flex-direction: column; gap: 8px; margin-bottom: 20px; }
+    .file-item {
+      display: flex; align-items: center; justify-content: space-between;
+      background: var(--bg3); padding: 12px 16px; border-radius: 10px;
+      font-family: 'JetBrains Mono', monospace; font-size: .82rem;
+    }
+    .file-item .fi-name { color: var(--text); }
+    .file-item .fi-size { color: var(--muted); }
+    .file-item .fi-remove {
+      color: var(--red); cursor: pointer; background: none; border: none;
+      font-size: 1rem; font-weight: 700; padding: 0 4px;
+    }
+
+    /* Framework selector */
+    .framework-row {
+      display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 24px;
+    }
+    .fw-chip {
+      padding: 8px 18px; border-radius: 10px; font-size: .82rem; font-weight: 600;
+      background: var(--bg3); border: 1px solid var(--border); color: var(--muted);
+      cursor: pointer; transition: all .2s;
+    }
+    .fw-chip:hover { border-color: var(--accent); color: var(--text); }
+    .fw-chip.active { background: var(--accent); border-color: var(--accent); color: #fff; }
+
+    .label { font-size: .78rem; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 10px; }
+
+    /* Deploy button */
+    .deploy-btn {
+      width: 100%; padding: 16px; border: none; border-radius: 14px; cursor: pointer;
+      font-size: 1rem; font-weight: 800; letter-spacing: .5px; transition: all .3s;
+      background: linear-gradient(135deg, var(--accent), var(--green));
+      color: #fff; position: relative; overflow: hidden;
+    }
+    .deploy-btn:hover { transform: translateY(-2px); box-shadow: 0 8px 30px rgba(0,230,118,.2); }
+    .deploy-btn:disabled { opacity: .5; cursor: not-allowed; transform: none; box-shadow: none; }
+
+    /* ── Deploy Progress ── */
+    .deploy-progress { display: none; padding: 28px; }
+    .deploy-progress.show { display: block; }
+
+    .progress-bar-track {
+      width: 100%; height: 6px; background: var(--bg3); border-radius: 10px;
+      overflow: hidden; margin-bottom: 24px;
+    }
+    .progress-bar-fill {
+      height: 100%; width: 0%; border-radius: 10px;
+      background: linear-gradient(90deg, var(--accent), var(--green));
+      transition: width .4s ease;
+    }
+
+    .log-window {
+      background: #0d0d14; border-radius: 12px; padding: 18px;
+      font-family: 'JetBrains Mono', monospace; font-size: .78rem;
+      max-height: 240px; overflow-y: auto; line-height: 1.8;
+      border: 1px solid var(--border);
+    }
+    .log-line { opacity: 0; animation: fadeIn .3s forwards; }
+    .log-line .time { color: var(--muted); }
+    .log-line .ok { color: var(--green); }
+    .log-line .info { color: var(--accent2); }
+    .log-line .warn { color: #ffd600; }
+    @keyframes fadeIn { to { opacity: 1; } }
+
+    /* ── Success Card ── */
+    .success-card {
+      display: none; text-align: center; padding: 48px 28px;
+    }
+    .success-card.show { display: block; animation: slideUp .5s ease; }
+    .success-card .check {
+      width: 72px; height: 72px; border-radius: 50%;
+      background: linear-gradient(135deg, var(--green), #00c853);
+      display: inline-flex; align-items: center; justify-content: center;
+      font-size: 2rem; margin-bottom: 20px;
+    }
+    .success-card h2 { font-size: 1.6rem; margin-bottom: 8px; }
+    .success-card .live-url {
+      font-family: 'JetBrains Mono', monospace; color: var(--green);
+      font-size: 1rem; font-weight: 600; margin-bottom: 24px;
+    }
+    .success-card .live-url a { color: var(--green); text-decoration: underline; }
+    .success-actions { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; }
+    .sa-btn {
+      padding: 12px 24px; border-radius: 12px; font-weight: 600; font-size: .85rem;
+      cursor: pointer; border: none; transition: all .2s;
+    }
+    .sa-btn.primary { background: var(--accent); color: #fff; }
+    .sa-btn.primary:hover { background: #5b4bd6; }
+    .sa-btn.outline { background: transparent; border: 1px solid var(--border); color: var(--text); }
+    .sa-btn.outline:hover { border-color: var(--accent); }
+
+    /* ── Features Section ── */
+    .features {
+      max-width: 1100px; margin: 100px auto 0; padding: 0 32px;
+    }
+    .features h2 {
+      text-align: center; font-size: 2.2rem; font-weight: 800; margin-bottom: 12px; letter-spacing: -1px;
+    }
+    .features .sub { text-align: center; color: var(--muted); margin-bottom: 52px; font-size: 1.05rem; }
+    .feat-grid {
+      display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 20px;
+    }
+    .feat-card {
+      background: var(--bg2); border: 1px solid var(--border); border-radius: 16px;
+      padding: 32px 28px; transition: all .3s;
+    }
+    .feat-card:hover { border-color: var(--accent); transform: translateY(-4px); box-shadow: 0 12px 40px rgba(0,0,0,.3); }
+    .feat-card .fc-icon {
+      width: 48px; height: 48px; border-radius: 12px;
+      background: var(--bg3); display: flex; align-items: center; justify-content: center;
+      font-size: 1.4rem; margin-bottom: 18px;
+    }
+    .feat-card h3 { font-size: 1.1rem; margin-bottom: 8px; font-weight: 700; }
+    .feat-card p { color: var(--muted); font-size: .88rem; line-height: 1.6; }
+
+    /* ── Footer ── */
+    footer {
+      max-width: 1200px; margin: 100px auto 0; padding: 32px;
+      border-top: 1px solid var(--border); text-align: center;
+      color: var(--muted); font-size: .82rem;
+    }
+
+    /* ── Responsive ── */
+    @media (max-width: 640px) {
+      .nav-links { display: none; }
+      .hero h1 { font-size: 2.4rem; }
+      .domain-box { flex-direction: column; }
+      .domain-box button { width: 100%; }
+      .domain-suffix { padding: 0 18px 8px; }
+      .framework-row { justify-content: center; }
+    }
+  </style>
+</head>
+<body>
+  <div class="bg-grid"></div>
+  <div class="bg-glow"></div>
+
+  <!-- Nav -->
+  <nav>
+    <div class="nav-inner">
+      <div class="logo">Ploy<span>It</span></div>
+      <ul class="nav-links">
+        <li><a href="#features">Features</a></li>
+        <li><a href="#">Docs</a></li>
+        <li><a href="#">Pricing</a></li>
+      </ul>
+      <button class="nav-cta" onclick="document.getElementById('domain').focus()">Start Deploying</button>
+    </div>
+  </nav>
+
+  <div class="container">
+    <!-- Hero -->
+    <section class="hero">
+      <div class="badge"><span class="dot"></span> All .com domains are free</div>
+      <h1>Deploy anything.<br><span class="grad">Instantly.</span></h1>
+      <p>Name your site, drag your files, pick a framework — PloyIt handles the rest. Free .com domain included.</p>
+
+      <div class="domain-box">
+        <input type="text" id="domain" placeholder="your-awesome-site" autocomplete="off" spellcheck="false" />
+        <span class="domain-suffix">.com</span>
+        <button id="claimBtn" onclick="claimDomain()">Claim &amp; Deploy</button>
+      </div>
+      <div class="domain-hint" id="domainHint"></div>
+    </section>
+
+    <!-- Deploy Panel -->
+    <section class="deploy-panel" id="deployPanel">
+      <div class="dp-header">
+        <div class="dp-site-name" id="dpSiteName">mysite.com</div>
+        <div class="dp-status"><div class="dot-status" id="dotStatus"></div><span id="statusText">Configuring</span></div>
+      </div>
+
+      <!-- Upload + Config -->
+      <div class="dp-body" id="dpBody">
+        <div class="label">Upload Files</div>
+        <div class="upload-zone" id="uploadZone">
+          <div class="icon">📂</div>
+          <p><strong>Click or drag & drop</strong> your project files here</p>
+          <input type="file" id="fileInput" multiple />
+        </div>
+        <div class="file-list" id="fileList"></div>
+
+        <div class="label">Framework</div>
+        <div class="framework-row" id="frameworkRow">
+          <div class="fw-chip active" data-fw="static">Static HTML</div>
+          <div class="fw-chip" data-fw="react">React</div>
+          <div class="fw-chip" data-fw="next">Next.js</div>
+          <div class="fw-chip" data-fw="vue">Vue</div>
+          <div class="fw-chip" data-fw="svelte">Svelte</div>
+          <div class="fw-chip" data-fw="astro">Astro</div>
+        </div>
+
+        <button class="deploy-btn" id="deployBtn" onclick="startDeploy()">🚀 Deploy to Production</button>
+      </div>
+
+      <!-- Progress -->
+      <div class="deploy-progress" id="deployProgress">
+        <div class="progress-bar-track"><div class="progress-bar-fill" id="progressFill"></div></div>
+        <div class="log-window" id="logWindow"></div>
+      </div>
+
+      <!-- Success -->
+      <div class="success-card" id="successCard">
+        <div class="check">✓</div>
+        <h2>You're Live! 🎉</h2>
+        <div class="live-url" id="liveUrl"></div>
+        <div class="success-actions">
+          <button class="sa-btn primary" onclick="location.reload()">Deploy Another</button>
+          <button class="sa-btn outline" onclick="copyUrl()">Copy URL</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- Features -->
+    <section class="features" id="features">
+      <h2>Why PloyIt?</h2>
+      <p class="sub">Everything you need. Nothing you don't.</p>
+      <div class="feat-grid">
+        <div class="feat-card">
+          <div class="fc-icon">🌐</div>
+          <h3>Free .com Domain</h3>
+          <p>Every project gets a real .com domain at zero cost. No catches, no renewals to worry about.</p>
+        </div>
+        <div class="feat-card">
+          <div class="fc-icon">⚡</div>
+          <h3>Instant Deploys</h3>
+          <p>Push your code and it's live in under 8 seconds. Edge network spans 200+ locations worldwide.</p>
+        </div>
+        <div class="feat-card">
+          <div class="fc-icon">🔒</div>
+          <h3>Auto SSL</h3>
+          <p>HTTPS enabled by default on every deployment. Your users are always secure.</p>
+        </div>
+        <div class="feat-card">
+          <div class="fc-icon">🧩</div>
+          <h3>Any Framework</h3>
+          <p>React, Next.js, Vue, Svelte, Astro, or plain HTML — PloyIt auto-detects and builds.</p>
+        </div>
+        <div class="feat-card">
+          <div class="fc-icon">📊</div>
+          <h3>Real-time Analytics</h3>
+          <p>Built-in visitor analytics dashboard. No scripts to install, no third-party tools needed.</p>
+        </div>
+        <div class="feat-card">
+          <div class="fc-icon">🔄</div>
+          <h3>Rollback in 1 Click</h3>
+          <p>Every deploy is versioned. Roll back to any previous version instantly if something breaks.</p>
+        </div>
+      </div>
+    </section>
+
+    <footer>
+      <p>© 2026 PloyIt — Ship it. Free.</p>
+    </footer>
+  </div>
+
+  <script>
+    // ── Domain Claiming ──
+    const domainInput = document.getElementById('domain');
+    const hint = document.getElementById('domainHint');
+    const taken = ['google', 'facebook', 'amazon', 'apple', 'microsoft', 'twitter'];
+
+    domainInput.addEventListener('input', () => {
+      const v = domainInput.value.trim().toLowerCase().replace(/[^a-z0-9-]/g, '');
+      domainInput.value = v;
+      if (v.length === 0) { hint.textContent = ''; hint.className = 'domain-hint'; return; }
+      if (v.length < 3) { hint.textContent = 'Domain must be at least 3 characters'; hint.className = 'domain-hint error'; return; }
+      if (taken.includes(v)) { hint.textContent = `${v}.com is taken — try something else!`; hint.className = 'domain-hint error'; return; }
+      hint.textContent = `✓ ${v}.com is available — free forever!`;
+      hint.className = 'domain-hint';
+    });
+
+    function claimDomain() {
+      const v = domainInput.value.trim().toLowerCase();
+      if (v.length < 3 || taken.includes(v)) { domainInput.focus(); return; }
+      document.getElementById('dpSiteName').textContent = v + '.com';
+      const panel = document.getElementById('deployPanel');
+      panel.classList.add('show');
+      panel.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+
+    // ── File Upload ──
+    const uploadZone = document.getElementById('uploadZone');
+    const fileInput = document.getElementById('fileInput');
+    const fileListEl = document.getElementById('fileList');
+    let uploadedFiles = [];
+
+    uploadZone.addEventListener('click', () => fileInput.click());
+    uploadZone.addEventListener('dragover', e => { e.preventDefault(); uploadZone.classList.add('dragover'); });
+    uploadZone.addEventListener('dragleave', () => uploadZone.classList.remove('dragover'));
+    uploadZone.addEventListener('drop', e => {
+      e.preventDefault(); uploadZone.classList.remove('dragover');
+      addFiles(e.dataTransfer.files);
+    });
+    fileInput.addEventListener('change', () => addFiles(fileInput.files));
+
+    function addFiles(files) {
+      for (const f of files) uploadedFiles.push(f);
+      renderFiles();
+    }
+
+    function renderFiles() {
+      fileListEl.innerHTML = uploadedFiles.map((f, i) => `
+        <div class="file-item">
+          <span class="fi-name">📄 ${f.name}</span>
+          <span class="fi-size">${(f.size / 1024).toFixed(1)} KB</span>
+          <button class="fi-remove" onclick="removeFile(${i})">×</button>
+        </div>
+      `).join('');
+    }
+
+    function removeFile(i) { uploadedFiles.splice(i, 1); renderFiles(); }
+
+    // ── Framework Selector ──
+    let selectedFw = 'static';
+    document.querySelectorAll('.fw-chip').forEach(chip => {
+      chip.addEventListener('click', () => {
+        document.querySelectorAll('.fw-chip').forEach(c => c.classList.remove('active'));
+        chip.classList.add('active');
+        selectedFw = chip.dataset.fw;
+      });
+    });
+
+    // ── Deploy Simulation ──
+    function startDeploy() {
+      const siteName = document.getElementById('dpSiteName').textContent;
+      document.getElementById('dpBody').style.display = 'none';
+      const progress = document.getElementById('deployProgress');
+      progress.classList.add('show');
+      const fill = document.getElementById('progressFill');
+      const log = document.getElementById('logWindow');
+      const dot = document.getElementById('dotStatus');
+      const statusText = document.getElementById('statusText');
+
+      dot.style.background = '#ffd600';
+      statusText.textContent = 'Deploying...';
+
+      const steps = [
+        { pct: 5,   msg: `<span class="info">▸ Claiming domain ${siteName}...</span>` },
+        { pct: 12,  msg: `<span class="ok">✓</span> Domain ${siteName} registered` },
+        { pct: 20,  msg: `<span class="info">▸ Provisioning SSL certificate...</span>` },
+        { pct: 30,  msg: `<span class="ok">✓</span> SSL certificate issued by Let's Encrypt` },
+        { pct: 38,  msg: `<span class="info">▸ Detecting framework: <strong>${selectedFw}</strong></span>` },
+        { pct: 45,  msg: `<span class="ok">✓</span> Build config locked — ${selectedFw}` },
+        { pct: 52,  msg: `<span class="info">▸ Installing dependencies...</span>` },
+        { pct: 60,  msg: `<span class="ok">✓</span> 142 packages installed (${(Math.random()*2+1).toFixed(1)}s)` },
+        { pct: 68,  msg: `<span class="info">▸ Building optimized production bundle...</span>` },
+        { pct: 78,  msg: `<span class="ok">✓</span> Build complete — ${Math.floor(Math.random()*400+100)} KB gzipped` },
+        { pct: 84,  msg: `<span class="info">▸ Deploying to edge network (247 regions)...</span>` },
+        { pct: 92,  msg: `<span class="ok">✓</span> Deployed to all edge nodes` },
+        { pct: 96,  msg: `<span class="info">▸ Running health checks...</span>` },
+        { pct: 100, msg: `<span class="ok">✓</span> All checks passed — site is <strong>LIVE</strong>` },
+      ];
+
+      let i = 0;
+      const interval = setInterval(() => {
+        if (i >= steps.length) {
+          clearInterval(interval);
+          setTimeout(() => showSuccess(siteName), 600);
+          return;
+        }
+        fill.style.width = steps[i].pct + '%';
+        const line = document.createElement('div');
+        line.className = 'log-line';
+        const now = new Date();
+        const ts = `${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}:${String(now.getSeconds()).padStart(2,'0')}`;
+        line.innerHTML = `<span class="time">[${ts}]</span> ${steps[i].msg}`;
+        log.appendChild(line);
+        log.scrollTop = log.scrollHeight;
+        i++;
+      }, 700);
+    }
+
+    function showSuccess(siteName) {
+      document.getElementById('deployProgress').classList.remove('show');
+      document.getElementById('dotStatus').style.background = 'var(--green)';
+      document.getElementById('statusText').textContent = 'Live';
+      const card = document.getElementById('successCard');
+      card.classList.add('show');
+      document.getElementById('liveUrl').innerHTML = `<a href="#">https://${siteName}</a>`;
+    }
+
+    function copyUrl() {
+      const url = document.getElementById('liveUrl').textContent.trim();
+      navigator.clipboard.writeText(url).then(() => {
+        const btn = document.querySelector('.sa-btn.outline');
+        btn.textContent = 'Copied!';
+        setTimeout(() => btn.textContent = 'Copy URL', 1500);
+      });
+    }
+  </script>
+</body>
+</html>
